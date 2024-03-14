@@ -1,13 +1,38 @@
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import EditScreenInfo from '../../components/edit-screen-info';
+
+import io from 'socket.io-client';
+import HealthStatus from '~/components/health-status/health-status';
+import { HealthLifeSuppotHost } from '~/constants/Connection';
 
 const Page = () => {
+
+  const [frequency, setFrequency] = useState();
+
+  useEffect(() => {
+   
+    const socket = io(HealthLifeSuppotHost);
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      socket.emit('room','teste');
+    });
+  
+    socket.on('frequency', (data) => {
+      console.log('Received message:', data);
+
+      if(data && data.value)
+        setFrequency(data.value);
+    });
+  
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Home</Text>
-      <View style={styles.separator} />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
+      <HealthStatus frequency={frequency}/>
     </View>
   );
 };
@@ -18,7 +43,7 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     flex: 1,
-    justifyContent: 'center',
+    marginTop: 100
   },
   separator: {
     backgroundColor: '#d1d5db',
