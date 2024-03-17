@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ImageBackground, StyleSheet, Text, View } from 'react-native';
+import socket from '~/requests/socket/SocketProvider';
 
 const image = require('~/assets/health.gif');
 
@@ -11,20 +12,50 @@ const healthWarnings = {
 
 
 function getFrequencyWarning(frequency: number) {
+    if(!frequency)
+        return healthWarnings.ok;
+
     return  frequency >= 50 && frequency <= 100 ? healthWarnings.ok : 
             frequency >= 40 && frequency < 50 || frequency > 100 && frequency < 110 ? healthWarnings.warning :
              healthWarnings.alert;
 }
 
-
 export default function HealthStatus(props:any) {
+
+    const [frequency, setFrequency] = useState(0);
+    const [pressure, setPressure] = useState(0);
+  
+    useEffect(() => {
+  
+      socket.on('frequency', (data) => {
+          console.log('Received message:', data);
+          if(data && data.value)
+            setFrequency(data.value);
+      });
+    
+      socket.on('pressure', (data) => {
+          console.log('Received message:', data);
+      
+          if(data && data.value)
+            setFrequency(data.value);
+      });
+  
+      return () => {
+        socket.disconnect();
+      };
+  
+    }, []);
+
     return (
-    <View style={{...styles.healthContainer, backgroundColor: getFrequencyWarning(props.frequency)}}>
-         <ImageBackground source={image}  style={styles.image} imageStyle={ styles.imageStyle} >
-            <Text style={styles.smallText}>Frequência cardíaca</Text>
-            <Text style={{...styles.innerText, color: getFrequencyWarning(props.frequency)}}>{props.frequency}</Text>
-            <Text style={styles.smallText}>BPM</Text>
-         </ImageBackground>
+    <View style={styles.healthContainer}>
+        <View style={{width: '100%',backgroundColor: getFrequencyWarning(frequency)}}>
+            <ImageBackground source={image}  style={styles.image} imageStyle={ styles.imageStyle} >
+                <Text style={styles.innerLeftTopText}>#teste</Text>
+                <Text style={styles.smallText}>Frequência cardíaca</Text>
+                <Text style={{...styles.innerText, color: getFrequencyWarning(frequency)}}>{frequency}</Text>
+                <Text style={styles.smallText}>BPM</Text>
+            </ImageBackground>
+        </View>
     </View>
   );
 }
@@ -40,14 +71,21 @@ const styles = StyleSheet.create({
     innerText : {
         color: '#fff',
         fontSize: 50,
-        fontFamily: 'sans-serif',
+        fontFamily: 'Roboto',
         fontWeight: 'bold',
         left: 45
+    },
+    innerLeftTopText : {
+        fontSize: 13,
+        fontFamily: 'Roboto',
+        left: -155,
+        top: 140,
+        color: 'gray',
     },
     smallText : {
         color: 'gray',
         fontSize: 18,
-        fontFamily: 'sans-serif',
+        fontFamily: 'Roboto',
         left: 45
     },
     image: {
